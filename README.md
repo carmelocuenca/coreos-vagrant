@@ -1,4 +1,9 @@
 # CoreOS Vagrant
+Los ficheros ```user-data```, ```config.rb``` y ```Vagrantfile``` determinan la configuración de lanzamiento del cluster CoreOS (número de nodos en el cluster y estado de los servicios).
+
+En ```config.rb```establecemos el número de nodos del cluster, también que el mecanismo de descubrimiento es el servicio  de descubrimiento de CoreOS, para utilizar un *token* estático generado con ```uuiddgen``` no debe existir el fichero ```config.rb```. El fichero ```user-data``` define una plantilla para los servicios de CoreOS (etcd2, fleet,..) y los de usuario. En general la plantilla la manipula el código *Ruby* del fichero ```Vagrantfile```.
+
+# CoreOS Vagrant
 
 This repo provides a template Vagrantfile to create a CoreOS virtual machine using the VirtualBox software hypervisor.
 After setup is complete you will have a single CoreOS virtual machine running on your local machine.

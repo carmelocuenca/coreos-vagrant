@@ -1,0 +1,121 @@
+#cloud-config
+
+---
+write_files:
+- path: "/home/core/example_01.service"
+  owner: core:core
+  permission: 420
+  content: |
+    [Unit]
+    Description=Example
+    After=docker.service
+    Requires=docker.service
+
+    [X-Fleet]
+    MachineMetadata=host=service_01
+
+    [Service]
+    TimeoutStartSec=0
+    ExecStartPre=-/usr/bin/docker kill sampleserv_01
+    ExecStartPre=-/usr/bin/docker rm sampleserv_01
+    ExecStartPre=/usr/bin/docker pull busybox
+    ExecStart=/usr/bin/docker run --name sampleserv_01 busybox /bin/sh -c "while true; do echo Test Service; sleep 300; done"
+    ExecStop=/usr/bin/docker stop sampleserv_01
+- path: "/home/core/example_02.service"
+  owner: core:core
+  permission: 420
+  content: |
+    [Unit]
+    Description=Example
+    After=docker.service
+    Requires=docker.service
+
+    [X-Fleet]
+    MachineMetadata=host=service_02
+
+    [Service]
+    TimeoutStartSec=0
+    ExecStartPre=-/usr/bin/docker kill sampleserv_02
+    ExecStartPre=-/usr/bin/docker rm sampleserv_02
+    ExecStartPre=/usr/bin/docker pull busybox
+    ExecStart=/usr/bin/docker run --name sampleserv_02 busybox /bin/sh -c "while true; do echo Test Service; sleep 300; done"
+    ExecStop=/usr/bin/docker stop sampleserv_02
+- path: "/home/core/example_03.service"
+  owner: core:core
+  permission: 420
+  content: |
+    [Unit]
+    Description=Example
+    After=docker.service
+    Requires=docker.service
+
+    [X-Fleet]
+    MachineMetadata=host=service_03
+
+    [Service]
+    TimeoutStartSec=0
+    ExecStartPre=-/usr/bin/docker kill sampleserv_03
+    ExecStartPre=-/usr/bin/docker rm sampleserv_03
+    ExecStartPre=/usr/bin/docker pull busybox
+    ExecStart=/usr/bin/docker run --name sampleserv_03 busybox /bin/sh -c "while true; do echo Test Service; sleep 300; done"
+    ExecStop=/usr/bin/docker stop sampleserv_03
+coreos:
+  etcd2:
+    discovery: https://discovery.etcd.io/095e8285e3ccda19678da71c1035d10b
+    advertise-client-urls: http://$public_ipv4:2379
+    initial-advertise-peer-urls: http://$private_ipv4:2380
+    listen-client-urls: http://0.0.0.0:2379,http://0.0.0.0:4001
+    listen-peer-urls: http://$private_ipv4:2380,http://$private_ipv4:7001
+  fleet:
+    public-ip: "$public_ipv4"
+    metadata: host=service_01
+  flannel:
+    interface: "$public_ipv4"
+  units:
+  - name: etcd2.service
+    command: start
+  - name: fleet.service
+    command: start
+    enable: true
+  - name: example_fleet_01.service
+    command: start
+    content: |
+      [Service]
+      Type=oneshot
+      ExecStartPre=/bin/sh -c "sleep 10"
+      ExecStart=/usr/bin/fleetctl start /home/core/example_01.service
+  - name: example_fleet_02.service
+    command: start
+    content: |
+      [Service]
+      Type=oneshot
+      ExecStartPre=/bin/sh -c "sleep 10"
+      ExecStart=/usr/bin/fleetctl start /home/core/example_02.service
+  - name: example_fleet_03.service
+    command: start
+    content: |
+      [Service]
+      Type=oneshot
+      ExecStartPre=/bin/sh -c "sleep 10"
+      ExecStart=/usr/bin/fleetctl start /home/core/example_03.service
+  - name: flanneld.service
+    drop-ins:
+    - name: 50-network-config.conf
+      content: |
+        [Service]
+        ExecStartPre=/usr/bin/etcdctl set /coreos.com/network/config '{ "Network": "10.1.0.0/16" }'
+    command: start
+  - name: docker-tcp.socket
+    command: start
+    enable: true
+    content: |
+      [Unit]
+      Description=Docker Socket for the API
+
+      [Socket]
+      ListenStream=2375
+      Service=docker.service
+      BindIPv6Only=both
+
+      [Install]
+      WantedBy=sockets.target

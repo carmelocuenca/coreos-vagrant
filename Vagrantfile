@@ -138,7 +138,19 @@ Vagrant.configure("2") do |config|
       end
 
       if File.exist?(CLOUD_CONFIG_PATH)
-        config.vm.provision :file, :source => "#{CLOUD_CONFIG_PATH}", :destination => "/tmp/vagrantfile-user-data"
+        user_data_specific = "#{CLOUD_CONFIG_PATH}-#{i}"
+        require 'yaml'
+        data = YAML.load(IO.readlines('user-data')[1..-1].join)
+        if data['coreos'].key? 'etcd2'
+          data['coreos']['etcd2']['name'] = vm_name
+        end
+        if data['coreos'].key? 'fleet'
+          data['coreos']['fleet']['metadata'] = "host=service_%02d" % [i]
+        end
+        yaml = YAML.dump(data)
+        File.open(user_data_specific, 'w') { |file| file.write("#cloud-config\n\n#{yaml}")}
+
+        config.vm.provision :file, :source => user_data_specific, :destination => "/tmp/vagrantfile-user-data"
         config.vm.provision :shell, :inline => "mv /tmp/vagrantfile-user-data /var/lib/coreos-vagrant/", :privileged => true
       end
 
