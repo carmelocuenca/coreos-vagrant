@@ -2,7 +2,7 @@
 
 ---
 write_files:
-- path: "/home/core/example_01.service"
+- path: "/home/core/common@.service"
   owner: core:core
   permission: 420
   content: |
@@ -12,63 +12,26 @@ write_files:
     Requires=docker.service
 
     [X-Fleet]
-    MachineMetadata=host=service_01
+    MachineMetadata=disk=ssd
+    Conflicts=common@*.service
 
     [Service]
     TimeoutStartSec=0
-    ExecStartPre=-/usr/bin/docker kill sampleserv_01
-    ExecStartPre=-/usr/bin/docker rm sampleserv_01
+    ExecStartPre=-/usr/bin/docker kill sampleserv
+    ExecStartPre=-/usr/bin/docker rm sampleserv
     ExecStartPre=/usr/bin/docker pull busybox
-    ExecStart=/usr/bin/docker run --name sampleserv_01 busybox /bin/sh -c "while true; do echo Test Service; sleep 300; done"
-    ExecStop=/usr/bin/docker stop sampleserv_01
-- path: "/home/core/example_02.service"
-  owner: core:core
-  permission: 420
-  content: |
-    [Unit]
-    Description=Example
-    After=docker.service
-    Requires=docker.service
-
-    [X-Fleet]
-    MachineMetadata=host=service_02
-
-    [Service]
-    TimeoutStartSec=0
-    ExecStartPre=-/usr/bin/docker kill sampleserv_02
-    ExecStartPre=-/usr/bin/docker rm sampleserv_02
-    ExecStartPre=/usr/bin/docker pull busybox
-    ExecStart=/usr/bin/docker run --name sampleserv_02 busybox /bin/sh -c "while true; do echo Test Service; sleep 300; done"
-    ExecStop=/usr/bin/docker stop sampleserv_02
-- path: "/home/core/example_03.service"
-  owner: core:core
-  permission: 420
-  content: |
-    [Unit]
-    Description=Example
-    After=docker.service
-    Requires=docker.service
-
-    [X-Fleet]
-    MachineMetadata=host=service_03
-
-    [Service]
-    TimeoutStartSec=0
-    ExecStartPre=-/usr/bin/docker kill sampleserv_03
-    ExecStartPre=-/usr/bin/docker rm sampleserv_03
-    ExecStartPre=/usr/bin/docker pull busybox
-    ExecStart=/usr/bin/docker run --name sampleserv_03 busybox /bin/sh -c "while true; do echo Test Service; sleep 300; done"
-    ExecStop=/usr/bin/docker stop sampleserv_03
+    ExecStart=/usr/bin/docker run --name sampleserv busybox /bin/sh -c "while true; do echo Test Service; sleep 300; done"
+    ExecStop=/usr/bin/docker stop sampleserv
 coreos:
   etcd2:
-    discovery: https://discovery.etcd.io/095e8285e3ccda19678da71c1035d10b
+    discovery: https://discovery.etcd.io/f34b9a8da0bad0cb36a28924d84f8397
     advertise-client-urls: http://$public_ipv4:2379
     initial-advertise-peer-urls: http://$private_ipv4:2380
     listen-client-urls: http://0.0.0.0:2379,http://0.0.0.0:4001
     listen-peer-urls: http://$private_ipv4:2380,http://$private_ipv4:7001
   fleet:
     public-ip: "$public_ipv4"
-    metadata: host=service_01
+    metadata: host=service_01,disk=ssd
   flannel:
     interface: "$public_ipv4"
   units:
@@ -83,21 +46,21 @@ coreos:
       [Service]
       Type=oneshot
       ExecStartPre=/bin/sh -c "sleep 10"
-      ExecStart=/usr/bin/fleetctl start /home/core/example_01.service
+      ExecStart=/usr/bin/fleetctl start /home/core/common@1.service
   - name: example_fleet_02.service
     command: start
     content: |
       [Service]
       Type=oneshot
       ExecStartPre=/bin/sh -c "sleep 10"
-      ExecStart=/usr/bin/fleetctl start /home/core/example_02.service
+      ExecStart=/usr/bin/fleetctl start /home/core/common@2.service
   - name: example_fleet_03.service
     command: start
     content: |
       [Service]
       Type=oneshot
       ExecStartPre=/bin/sh -c "sleep 10"
-      ExecStart=/usr/bin/fleetctl start /home/core/example_03.service
+      ExecStart=/usr/bin/fleetctl start /home/core/common@3.service
   - name: flanneld.service
     drop-ins:
     - name: 50-network-config.conf

@@ -145,7 +145,7 @@ Vagrant.configure("2") do |config|
           data['coreos']['etcd2']['name'] = vm_name
         end
         if data['coreos'].key? 'fleet'
-          data['coreos']['fleet']['metadata'] = "host=service_%02d" % [i]
+          data['coreos']['fleet']['metadata'] = "host=service_%02d,disk=ssd" % [i]
         end
         yaml = YAML.dump(data)
         File.open(user_data_specific, 'w') { |file| file.write("#cloud-config\n\n#{yaml}")}
